@@ -1,0 +1,50 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- develop/develop 
+
+pr: none
+
+stages:
+- stage: CD
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  pool:
+    vmImage: ubuntu-latest
+
+  variables:
+  - name: S3_PATH
+    value: mwaa-bucket-artifact-dev
+
+  - name: AIRFLOW_NAME
+    value: mwaa-dev
+
+  jobs:
+  - job:
+    steps:
+    - script: |
+        echo Start pipline.
+        ls
+        pwd
+      displayName: 'Start'
+
+    - task: S3Upload@1
+      inputs:
+        awsCredentials: 'data-pipeline'
+        regionName: 'us-west-2'
+        bucketName: '$(S3_PATH)'
+        sourceFolder: 'dags'
+        globExpressions: '**'
+        targetFolder: 'dags'
+
+    - task: S3Upload@1
+      inputs:
+        awsCredentials: 'data-pipeline'
+        regionName: 'us-west-2'
+        bucketName: '$(S3_PATH)'
+        sourceFolder: 'subdags'
+        globExpressions: '**'
+        targetFolder: 'dags/subdags'
+
